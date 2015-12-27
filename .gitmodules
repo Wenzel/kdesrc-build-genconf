@@ -1,0 +1,4 @@
+[submodule "kde-build-metadata"]
+	path = kde-build-metadata
+	url = http://anongit.kde.org/kde-build-metadata
+	branch = master
