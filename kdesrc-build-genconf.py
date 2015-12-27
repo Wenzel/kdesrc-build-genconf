@@ -16,9 +16,9 @@ import requests
 import logging
 import xml.etree.ElementTree as et
 
-from PyQt5.QtCore import QObject,QDir,QUrl,QAbstractItemModel
+from PyQt5.QtCore import QObject,QDir,QUrl,QAbstractItemModel,Qt
 from PyQt5.QtGui import QStandardItemModel,QStandardItem
-from PyQt5.QtWidgets import QApplication,QFileSystemModel,QTreeView
+from PyQt5.QtWidgets import QApplication,QFileSystemModel,QTreeView,QMainWindow,QDesktopWidget,QAction
 from PyQt5.QtQml import QQmlApplicationEngine
 
 import utils.git as git
@@ -29,6 +29,49 @@ VERSION = '0.1'
 SCRIPT_PATH = os.path.realpath(__file__)
 SCRIPT_DIR = os.path.dirname(SCRIPT_PATH)
 KDE_PROJECTS_XML_URL = 'https://projects.kde.org/kde_projects.xml'
+
+class App(QMainWindow):
+
+    def __init__(self, treemodel):
+        super().__init__()
+        self.center()
+        self.treemodel = treemodel
+        # actions
+        generateAction = QAction("Generate", self)
+        generateAction.triggered.connect(self.generateActionHandle)
+        # toolbar
+        toolbar  = self.addToolBar("tb")
+        toolbar.addAction(generateAction)
+        # treeview
+        treeview = QTreeView(self)
+        treeview.setModel(treemodel)
+        self.setCentralWidget(treeview)
+
+    def generateActionHandle(self):
+        root = self.treemodel.invisibleRootItem()
+        checked_items = self.find_checked_items(root)
+        for item in checked_items:
+            print(item)
+
+    def find_checked_items(self, item):
+        checked_items = []
+        if (item.hasChildren()):
+            for row in range(item.rowCount()):
+                child = item.child(row)
+                checked_items.extend(self.find_checked_items(child))
+        if (item.checkState() == Qt.Checked):
+            checked_items.append(item.text())
+        return checked_items
+
+    def center(self):
+        screen = QDesktopWidget().screenGeometry()
+        self.resize(screen.width() * 0.5, screen.height() * 0.6)
+        mypos = self.geometry()
+        hpos = (screen.width() - mypos.width()) / 2
+        vpos = (screen.height() - mypos.height()) / 2
+        self.move(hpos, vpos)
+
+
 
 def update_build_metadata():
     git.update_submodules(SCRIPT_DIR)
@@ -62,17 +105,23 @@ def setupModelData(xml_tree):
 
     for comp in xml_tree.findall('component'):
         comp_item = QStandardItem(comp.attrib['identifier'])
+        comp_item.setCheckable(True)
+        comp_item.setSelectable(False)
         for mod in comp.findall('module'):
             mod_item = QStandardItem(mod.attrib['identifier'])
+            mod_item.setCheckable(True)
             for proj in mod.findall('project'):
                 proj_item = QStandardItem(proj.attrib['identifier'])
+                proj_item.setCheckable(True)
                 mod_item.appendRow(proj_item)
             comp_item.appendRow(mod_item)
         root.appendRow(comp_item)
+
     return model
 
 
 def main(cmdline):
+    app = QApplication(sys.argv)
     init_logger()
     logging.debug(cmdline)
     # download and load kde_projects.xml
@@ -80,17 +129,10 @@ def main(cmdline):
     # setup model
     model = setupModelData(xml_tree)
     # clone/update kde-build-metadata
-    # update_build_metadata()
-    # display gui
-    display(model)
+    update_build_metadata()
 
-def display(model):
-    app = QApplication(sys.argv)
-
-    engine = QQmlApplicationEngine()
-    ctxt = engine.rootContext()
-    ctxt.setContextProperty('myModel', model)
-    engine.load("main.qml")
+    view = App(model)
+    view.show()
 
     app.exec_()
 
