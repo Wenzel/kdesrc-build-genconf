@@ -10,6 +10,7 @@
     virtualenv --always-copy venv
     pip install -r requirements.txt
     ./install_pyqt5.sh
+    for i in `echo *.ui`; do pyuic5 $i -o ${i%.ui}.py ; done
 
 # Usage
 

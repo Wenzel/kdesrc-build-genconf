@@ -16,21 +16,20 @@ import requests
 import logging
 import xml.etree.ElementTree as et
 
-from PyQt5.QtCore import QObject,QDir,QUrl,QAbstractItemModel,Qt
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QStandardItemModel,QStandardItem
-from PyQt5.QtWidgets import QApplication,QFileSystemModel,QTreeView,QMainWindow,QDesktopWidget,QAction
-from PyQt5.QtQml import QQmlApplicationEngine
+from PyQt5.QtWidgets import QApplication,QTreeView
 
 import utils.git as git
-import utils.cmake as cmake
-import utils.make as make
+
+from MainWindow import MainWindow
 
 VERSION = '0.1'
 SCRIPT_PATH = os.path.realpath(__file__)
 SCRIPT_DIR = os.path.dirname(SCRIPT_PATH)
 KDE_PROJECTS_XML_URL = 'https://projects.kde.org/kde_projects.xml'
 
-class App(QMainWindow):
+class App():
 
     def __init__(self, treemodel):
         super().__init__()
@@ -63,13 +62,7 @@ class App(QMainWindow):
             checked_items.append(item.text())
         return checked_items
 
-    def center(self):
-        screen = QDesktopWidget().screenGeometry()
-        self.resize(screen.width() * 0.5, screen.height() * 0.6)
-        mypos = self.geometry()
-        hpos = (screen.width() - mypos.width()) / 2
-        vpos = (screen.height() - mypos.height()) / 2
-        self.move(hpos, vpos)
+
 
 
 
@@ -131,7 +124,7 @@ def main(cmdline):
     # clone/update kde-build-metadata
     update_build_metadata()
 
-    view = App(model)
+    view = MainWindow()
     view.show()
 
     app.exec_()
