@@ -16,18 +16,21 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QHBoxLayout" name="horizontalLayout">
     <item>
-     <widget class="QTableView" name="tableview">
-      <property name="enabled">
-       <bool>false</bool>
+     <widget class="QTreeView" name="file_treeview">
+      <property name="editTriggers">
+       <set>QAbstractItemView::NoEditTriggers</set>
       </property>
      </widget>
     </item>
     <item>
-     <widget class="QTreeView" name="treeview">
+     <widget class="QTreeView" name="project_treeview">
       <property name="enabled">
-       <bool>false</bool>
+       <bool>true</bool>
       </property>
      </widget>
+    </item>
+    <item>
+     <widget class="QTextBrowser" name="textbrowser"/>
     </item>
    </layout>
   </widget>

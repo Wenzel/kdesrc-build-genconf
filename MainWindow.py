@@ -1,9 +1,11 @@
 import re
 import logging
 
+
 from PyQt5.QtWidgets import QMainWindow,QDesktopWidget,QFileDialog
 from PyQt5.QtCore import Qt,QDir
 
+from Config import Config
 from ui_mainwindow import Ui_MainWindow
 
 class MainWindow(QMainWindow, Ui_MainWindow):
@@ -11,17 +13,20 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def __init__(self, tree_model, parent=None):
         super().__init__(parent)
         self.treemodel = tree_model
+        self.config = None
         self.setupUi(self)
         self.setupActions()
-        self.treeview.setModel(tree_model)
+        self.project_treeview.setModel(self.treemodel)
         self.center()
 
     def setupActions(self):
         self.actionLoadConfigFile.triggered.connect(self.handleActionLoadConfigFile)
+        # file_treeview
+        self.file_treeview.clicked.connect(self.handleFileTreeViewClicked)
 
     def center(self):
         screen = QDesktopWidget().screenGeometry()
-        self.resize(screen.width() * 0.5, screen.height() * 0.6)
+        self.resize(screen.width() * 0.7, screen.height() * 0.6)
         mypos = self.geometry()
         hpos = (screen.width() - mypos.width()) / 2
         vpos = (screen.height() - mypos.height()) / 2
@@ -32,6 +37,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         checked_items = self.find_checked_items(root)
         for item in checked_items:
             print(item)
+
+    def handleFileTreeViewClicked(self, index):
+        filename = index.data()
+        with open(filename, 'r') as f:
+            content = f.read()
+            self.textbrowser.setText(content)
 
     def find_checked_items(self, item):
         checked_items = []
@@ -52,10 +63,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if filename:
             # getOpenFileName returns a tuple
             filename = filename[0]
-            module_set_list = []
-            # reset treemodel checked items
-            root = self.treemodel.invisibleRootItem()
-            self.resetItemCheckState(root)
+            self.config = Config(filename)
+            self.updateFileView()
+
+    def updateFileView(self):
+        model = self.config.getFileTreeModel()
+        self.file_treeview.setModel(model)
 
 
     def resetItemCheckState(self, item):

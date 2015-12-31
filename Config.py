@@ -2,6 +2,8 @@ import re
 import os
 import logging
 
+from PyQt5.QtGui import QStandardItemModel,QStandardItem
+
 class Module():
 
     def __init__(self):
@@ -37,6 +39,7 @@ class ConfigFile():
 
     def __init__(self, filepath):
         self.filepath = filepath
+        self.filename = os.path.basename(self.filepath)
         self.fd = open(self.filepath, 'r')
         self.elements = []
         self.includes = []
@@ -178,3 +181,23 @@ class ConfigFile():
             # loop
             next_line = self.getNextLine()
         self.elements.append(module)
+
+    def getStandardItem(self):
+        item = QStandardItem(self.filepath)
+        for i in self.includes:
+            item.appendRow(i.getStandardItem())
+        return item
+
+class Config():
+
+    def __init__(self, filepath):
+        self.root = ConfigFile(filepath)
+        self.root.load()
+
+    def getFileTreeModel(self):
+        file_treemodel = QStandardItemModel()
+        file_treemodel.setHorizontalHeaderLabels(["config file"])
+        root = file_treemodel.invisibleRootItem()
+        root.appendRow(self.root.getStandardItem())
+
+        return file_treemodel
