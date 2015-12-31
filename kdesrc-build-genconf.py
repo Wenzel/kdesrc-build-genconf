@@ -29,43 +29,6 @@ SCRIPT_PATH = os.path.realpath(__file__)
 SCRIPT_DIR = os.path.dirname(SCRIPT_PATH)
 KDE_PROJECTS_XML_URL = 'https://projects.kde.org/kde_projects.xml'
 
-class App():
-
-    def __init__(self, treemodel):
-        super().__init__()
-        self.center()
-        self.treemodel = treemodel
-        # actions
-        generateAction = QAction("Generate", self)
-        generateAction.triggered.connect(self.generateActionHandle)
-        # toolbar
-        toolbar  = self.addToolBar("tb")
-        toolbar.addAction(generateAction)
-        # treeview
-        treeview = QTreeView(self)
-        treeview.setModel(treemodel)
-        self.setCentralWidget(treeview)
-
-    def generateActionHandle(self):
-        root = self.treemodel.invisibleRootItem()
-        checked_items = self.find_checked_items(root)
-        for item in checked_items:
-            print(item)
-
-    def find_checked_items(self, item):
-        checked_items = []
-        if (item.hasChildren()):
-            for row in range(item.rowCount()):
-                child = item.child(row)
-                checked_items.extend(self.find_checked_items(child))
-        if (item.checkState() == Qt.Checked):
-            checked_items.append(item.text())
-        return checked_items
-
-
-
-
-
 def update_build_metadata():
     git.update_submodules(SCRIPT_DIR)
 
@@ -94,6 +57,7 @@ def init_logger():
 
 def setupModelData(xml_tree):
     model = QStandardItemModel()
+    model.setHorizontalHeaderLabels(['Name'])
     root = model.invisibleRootItem()
 
     for comp in xml_tree.findall('component'):
@@ -124,7 +88,7 @@ def main(cmdline):
     # clone/update kde-build-metadata
     update_build_metadata()
 
-    view = MainWindow()
+    view = MainWindow(model)
     view.show()
 
     app.exec_()

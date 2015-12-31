@@ -2,3 +2,6 @@ venv
 .idea
 __pycache__
 .pyc
+
+# generated files from pyuic5
+ui_mainwindow.py
