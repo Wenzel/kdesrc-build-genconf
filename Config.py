@@ -2,12 +2,121 @@ import re
 import os
 import logging
 
+from PyQt5.QtCore import Qt,QAbstractItemModel,QVariant,QModelIndex
 from PyQt5.QtGui import QStandardItemModel,QStandardItem
+
+class TreeItem(object):
+
+    def __init__(self, data, parent=None):
+        self.data = data
+        self.parent = parent
+        self.children = []
+
+    def dataAt(self, row):
+        if (row >= self.columnCount()):
+            return ""
+        return self.data[row]
+
+    def addChild(self, item):
+        item.parent = self
+        self.children.append(item)
+
+    def child(self, row):
+        return self.children[row]
+
+    def childCount(self):
+        return len(self.children)
+
+    def columnCount(self):
+        return len(self.data)
+
+    def row(self):
+        if self.parent:
+            return self.parent.children.index(self)
+        return 0
+
+class TreeModel(QAbstractItemModel):
+
+    def __init__(self, header_data, parent=None):
+        super().__init__(parent)
+        self.parents = []
+        self.root = TreeItem(header_data)
+
+    def columnCount(self, parent):
+       if parent.isValid():
+           return parent.internalPointer().columnCount()
+       else:
+           return self.root.columnCount()
+
+    def rowCount(self, parent):
+       if parent.column() > 0:
+           return 0
+       if not parent.isValid():
+           parentItem = self.root
+       else:
+           parentItem = parent.internalPointer()
+       return parentItem.childCount()
+
+    def flags(self, index):
+        if not index.isValid():
+           return Qt.NoItemFlags
+        return super().flags(index)
+
+    def headerData(self, section, orientation, role=None):
+        if (orientation == Qt.Horizontal and role == Qt.DisplayRole):
+            return self.root.data[section]
+
+        return QVariant()
+
+    def index(self, row, column, parent):
+        if not self.hasIndex(row, column, parent):
+            return QModelIndex()
+
+        if parent.isValid():
+            parent_item = parent.internalPointer()
+        else:
+            parent_item = self.root
+
+        return self.createIndex(row, column, parent_item.child(row))
+
+    def parent(self, index):
+        if not index.isValid():
+            return QModelIndex()
+
+        child_item = index.internalPointer()
+        parent_item = child_item.parent
+
+        if (parent_item == self.root):
+            return QModelIndex()
+
+        return self.createIndex(parent_item.row(), 0, parent_item)
+
+    def data(self, index, role):
+        if not index.isValid():
+            return None
+        if role != Qt.DisplayRole:
+            return None
+
+        item = index.internalPointer()
+
+        return QVariant(item.dataAt(index.column()))
+
+    def setupModelData(self, config_root):
+        for d in config_root.declarations:
+            item = d.getItem()
+            self.root.addChild(item)
 
 class Include():
 
-    def __init__(self, filepath):
+    def __init__(self, filepath, config):
         self.filepath = filepath
+        self.content = config
+
+    def getItem(self):
+        item = TreeItem(["include", self.filepath])
+        for i in self.content.getItems():
+            item.addChild(i)
+        return item
 
 class Section():
 
@@ -16,13 +125,20 @@ class Section():
         self.id = id
         self.content = content
 
+    def getItem(self):
+        item = TreeItem([self.type, self.id])
+        for pair in self.content.items():
+            subitem = TreeItem(pair)
+            item.addChild(subitem)
+        return item
+
+
 class ConfigFile():
 
     def __init__(self, filepath):
         self.filepath = filepath
         self.filename = os.path.basename(self.filepath)
         self.declarations = []
-        self.includes = []
 
     def getNextLine(self):
         # skip comments
@@ -72,29 +188,26 @@ class ConfigFile():
                         next_line = self.getNextLine()
                     section = Section(s, content, section_id)
                     self.declarations.append(section)
-            # include ? ignored for now
-            # match = re.match(r'^include\s(?P<filepath>.*)$', next_line)
-            # if match:
-            #     filepath = match.group(1)
-            #     logging.debug('new include {}'.format(filepath))
-            #     # loading include
-            #     # relative path ?
-            #     if not filepath[0] == '/':
-            #         filepath = os.path.dirname(self.filepath) + '/' + filepath
-            #     config = ConfigFile(filepath)
-            #     config.load()
-            #     self.includes.append(config)
-            #     self.includes.append(filepath)
-            #
-            #     include = Include(filepath)
-            #     self.declarations.append(include)
+            # include ?
+            match = re.match(r'^include\s(?P<filepath>.*)$', next_line)
+            if match:
+                filepath = match.group(1)
+                logging.debug('new include {}'.format(filepath))
+                # loading include
+                # relative path ?
+                if not filepath[0] == '/':
+                    filepath = os.path.dirname(self.filepath) + '/' + filepath
+                config = ConfigFile(filepath)
+                config.load()
+                include = Include(filepath, config)
+                self.declarations.append(include)
             next_line = self.getNextLine()
 
-    def getStandardItem(self):
-        item = QStandardItem(self.filepath)
-        for i in self.includes:
-            item.appendRow(i.getStandardItem())
-        return item
+    def getItems(self):
+        items = []
+        for d in self.declarations:
+            items.append(d.getItem())
+        return items
 
 class Config():
 
