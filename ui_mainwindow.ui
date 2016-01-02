@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
+    <width>1062</width>
     <height>600</height>
    </rect>
   </property>
@@ -16,21 +16,18 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QHBoxLayout" name="horizontalLayout">
     <item>
-     <widget class="QTreeView" name="file_treeview">
-      <property name="editTriggers">
-       <set>QAbstractItemView::NoEditTriggers</set>
-      </property>
+     <widget class="QTreeView" name="element_treeview">
+      <attribute name="headerDefaultSectionSize">
+       <number>150</number>
+      </attribute>
      </widget>
     </item>
     <item>
      <widget class="QTreeView" name="project_treeview">
       <property name="enabled">
-       <bool>true</bool>
+       <bool>false</bool>
       </property>
      </widget>
-    </item>
-    <item>
-     <widget class="QTextBrowser" name="textbrowser"/>
     </item>
    </layout>
   </widget>
@@ -48,11 +45,17 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
+   <addaction name="actionCreateConfigFile"/>
    <addaction name="actionLoadConfigFile"/>
   </widget>
   <action name="actionLoadConfigFile">
    <property name="text">
-    <string>Load configuration file</string>
+    <string>Load configuration</string>
+   </property>
+  </action>
+  <action name="actionCreateConfigFile">
+   <property name="text">
+    <string>Create configuration</string>
    </property>
   </action>
  </widget>
