@@ -22,6 +22,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def setupActions(self):
         self.actionLoadConfigFile.triggered.connect(self.handleActionLoadConfigFile)
         self.actionCreateConfigFile.triggered.connect(self.handleActionCreateConfigFile)
+        self.actionWriteConfigFile.triggered.connect(self.handleActionWriteConfigFile)
 
     def center(self):
         screen = QDesktopWidget().screenGeometry()
@@ -55,6 +56,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
          # getSavedFileName returns a tuple
         filename = filename[0]
         self.config = Config(filename)
+        self.config.defineNewConfig()
         self.displayConfig(self.config)
 
 
@@ -70,10 +72,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.config.load()
             self.displayConfig(self.config)
 
+    def handleActionWriteConfigFile(self):
+        pass
+
     def displayConfig(self, config):
         treemodel = TreeModel(["Declaration", "Value"])
         treemodel.setupModelData(config.root)
         self.element_treeview.setModel(treemodel)
+        self.actionWriteConfigFile.setEnabled(True)
         self.statusbar.showMessage(config.masterfile)
 
     def resetItemCheckState(self, item):

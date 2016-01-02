@@ -16,11 +16,18 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QHBoxLayout" name="horizontalLayout">
     <item>
-     <widget class="QTreeView" name="element_treeview">
-      <attribute name="headerDefaultSectionSize">
-       <number>150</number>
-      </attribute>
-     </widget>
+     <layout class="QVBoxLayout" name="verticalLayout">
+      <item>
+       <widget class="QToolButton" name="toolButton">
+        <property name="text">
+         <string>...</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QTreeView" name="element_treeview"/>
+      </item>
+     </layout>
     </item>
     <item>
      <widget class="QTreeView" name="project_treeview">
@@ -47,6 +54,7 @@
    </attribute>
    <addaction name="actionCreateConfigFile"/>
    <addaction name="actionLoadConfigFile"/>
+   <addaction name="actionWriteConfigFile"/>
   </widget>
   <action name="actionLoadConfigFile">
    <property name="text">
@@ -56,6 +64,14 @@
   <action name="actionCreateConfigFile">
    <property name="text">
     <string>Create configuration</string>
+   </property>
+  </action>
+  <action name="actionWriteConfigFile">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Write Configuration</string>
    </property>
   </action>
  </widget>

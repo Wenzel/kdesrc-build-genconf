@@ -108,9 +108,16 @@ class TreeModel(QAbstractItemModel):
 
 class Include():
 
-    def __init__(self, filepath, config):
+    def __init__(self, filepath, parent_filepath):
+        self.parent_filepath = parent_filepath
         self.filepath = filepath
-        self.content = config
+        # relative
+        if filepath[0] == '/':
+            self.realpath = filepath
+        else:
+            self.realpath = os.path.dirname(self.parent_filepath) + '/' + filepath
+        self.content = ConfigFile(self.realpath)
+        self.content.load()
 
     def getItem(self):
         item = TreeItem(["include", self.filepath])
@@ -131,7 +138,6 @@ class Section():
             subitem = TreeItem(pair)
             item.addChild(subitem)
         return item
-
 
 class ConfigFile():
 
@@ -193,13 +199,7 @@ class ConfigFile():
             if match:
                 filepath = match.group(1)
                 logging.debug('new include {}'.format(filepath))
-                # loading include
-                # relative path ?
-                if not filepath[0] == '/':
-                    filepath = os.path.dirname(self.filepath) + '/' + filepath
-                config = ConfigFile(filepath)
-                config.load()
-                include = Include(filepath, config)
+                include = Include(filepath, self.filepath)
                 self.declarations.append(include)
             next_line = self.getNextLine()
 
@@ -209,6 +209,22 @@ class ConfigFile():
             items.append(d.getItem())
         return items
 
+    def defineNewConfig(self):
+        # add global section
+        type = "global"
+        content = {
+            "branch-group" : "kf5-qt5",
+            "kdedir" : "",
+            "qtdir" : "/usr",
+            "source-dir" : "",
+            "build-dir" : "",
+            "cxxfags" : "",
+            "cmake-options" : "",
+            "make-options" : "-j4"
+        }
+        s = Section(type, content)
+        self.declarations.append(s)
+
 class Config():
 
     def __init__(self, masterfile=None):
@@ -217,6 +233,9 @@ class Config():
 
     def load(self):
         self.root.load()
+
+    def defineNewConfig(self):
+        self.root.defineNewConfig()
 
     def getFileTreeModel(self):
         file_treemodel = QStandardItemModel()
