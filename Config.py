@@ -3,7 +3,6 @@ import os
 import logging
 
 from PyQt5.QtCore import Qt,QAbstractItemModel,QVariant,QModelIndex
-from PyQt5.QtGui import QStandardItemModel,QStandardItem
 
 class TreeItem(object):
 
@@ -125,6 +124,12 @@ class Include():
             item.addChild(i)
         return item
 
+    def getOutput(self):
+        return "include" + " " + self.filepath
+
+    def writeConfig(self):
+        self.content.writeConfig()
+
 class Section():
 
     def __init__(self, type, content, id=None,):
@@ -138,6 +143,19 @@ class Section():
             subitem = TreeItem(pair)
             item.addChild(subitem)
         return item
+
+    def getOutput(self):
+        output = self.type
+        if self.id:
+            output += " " + self.id
+        output += "\n"
+        for pair in self.content.items():
+            output += (" " * 4) + pair[0] + " " + pair[1]
+            output += "\n"
+        # end section
+        output += "end" + " " + self.type
+        output += "\n"
+        return output
 
 class ConfigFile():
 
@@ -202,6 +220,7 @@ class ConfigFile():
                 include = Include(filepath, self.filepath)
                 self.declarations.append(include)
             next_line = self.getNextLine()
+        self.fd.close()
 
     def getItems(self):
         items = []
@@ -225,6 +244,18 @@ class ConfigFile():
         s = Section(type, content)
         self.declarations.append(s)
 
+    def writeConfig(self):
+        with open(self.filepath, 'w') as self.fd:
+            self.fd.truncate()
+            for d in self.declarations:
+                output = d.getOutput()
+                self.fd.write(output)
+                self.fd.write("\n")
+                # write include
+                if isinstance(d, Include):
+                    d.writeConfig()
+
+
 class Config():
 
     def __init__(self, masterfile=None):
@@ -237,11 +268,5 @@ class Config():
     def defineNewConfig(self):
         self.root.defineNewConfig()
 
-    def getFileTreeModel(self):
-        file_treemodel = QStandardItemModel()
-        file_treemodel.setHorizontalHeaderLabels(["config file"])
-        root = file_treemodel.invisibleRootItem()
-        root.appendRow(self.root.getStandardItem())
-
-        return file_treemodel
-
+    def writeConfig(self):
+        self.root.writeConfig()

@@ -15,14 +15,16 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.treemodel = tree_model
         self.config = None
         self.setupUi(self)
-        self.setupActions()
+        self.setupConnect()
         self.project_treeview.setModel(self.treemodel)
         self.center()
 
-    def setupActions(self):
+    def setupConnect(self):
         self.actionLoadConfigFile.triggered.connect(self.handleActionLoadConfigFile)
         self.actionCreateConfigFile.triggered.connect(self.handleActionCreateConfigFile)
         self.actionWriteConfigFile.triggered.connect(self.handleActionWriteConfigFile)
+        self.element_treeview.clicked.connect(self.handleSignalElementTreeViewClicked)
+
 
     def center(self):
         screen = QDesktopWidget().screenGeometry()
@@ -73,17 +75,56 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.displayConfig(self.config)
 
     def handleActionWriteConfigFile(self):
-        pass
+        self.config.writeConfig()
+
 
     def displayConfig(self, config):
         treemodel = TreeModel(["Declaration", "Value"])
         treemodel.setupModelData(config.root)
         self.element_treeview.setModel(treemodel)
+        # enable some actions and statusbar
         self.actionWriteConfigFile.setEnabled(True)
         self.statusbar.showMessage(config.masterfile)
+
+    def handleSignalElementTreeViewClicked(self, index):
+        data = index.internalPointer().data
+        root = self.project_treeview.model().invisibleRootItem()
+        # reset the project treeview state anyway
+        self.resetItemCheckState(root)
+        # use-modules ?
+        if data[0] == "use-modules":
+            # enable project_treeview and enable correponding project
+            self.project_treeview.setEnabled(True)
+            # check projects specified by this module-set
+            use_modules_str = data[1]
+            use_modules = re.split('\s+', use_modules_str)
+            logging.debug(use_modules)
+            self.checkItem(root, use_modules)
+        else:
+            self.project_treeview.setEnabled(False)
 
     def resetItemCheckState(self, item):
         if (item.hasChildren()):
             for row in range(item.rowCount()):
-                item.child(row).setCheckState(Qt.Unchecked)
+                self.resetItemCheckState(item.child(row))
         item.setCheckState(Qt.Unchecked)
+
+    def checkItem(self, item, projects):
+        if not projects:
+            return
+        try:
+            index = projects.index(item.text())
+            # set check state
+            item.setCheckState(Qt.Checked)
+            # set the state of it's parents as partially checked
+            parent = item.parent()
+            while parent:
+                parent.setCheckState(Qt.PartiallyChecked)
+                parent = parent.parent()
+            # remove from projects
+            projects.pop(index)
+        except ValueError:
+            pass
+        # find in children
+        for row in range(item.rowCount()):
+            self.checkItem(item.child(row), projects)
